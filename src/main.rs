@@ -1,5 +1,9 @@
-use std::thread::sleep;
-use chrono::{Duration, Utc};
+use chrono::Duration;
+use clap::{App, Arg, ArgMatches, SubCommand};
+
+mod task;
+
+use task::Task;
 
 fn fmt_duration(duration: Duration) -> String {
     let hours = duration.num_hours() % 24;
@@ -12,21 +16,36 @@ fn prompt(duration: Duration) -> String {
     return format!("[{}]", fmt_duration(duration));
 }
 
+fn get_arg_matches() -> ArgMatches<'static> {
+    return App::new("Rustimer")
+        .version("0.1")
+        .subcommand(
+            SubCommand::with_name("start").arg(
+                Arg::with_name("name")
+                    .help("The name of the task")
+                    .required(true),
+            ),
+        )
+        .get_matches();
+}
+
 fn main() {
-    let start_time = Utc::now();
+    let arg_matches = get_arg_matches();
 
-    let mut rl = rustyline::Editor::<()>::new();
-
-    loop {
-        let elapsed_time = Utc::now() - start_time;
-        eprint!("\r[{}] Working on project...\x1b[K", fmt_duration(elapsed_time));
-
-        let line_result = rl.readline(prompt(elapsed_time).as_str());
-        match line_result {
-            Ok(line) => println!("Thanks for input: {}", line),
-            _ => return
-        }
-
-        sleep(std::time::Duration::from_secs(1));
+    // Default action is to show status
+    if arg_matches.subcommand_name() == None {
+        print_status();
     }
+
+    match arg_matches.subcommand() {
+        ("start", Some(subargs)) => {
+            let task = Task::create_now(subargs.value_of("name").unwrap());
+            println!("{:?}", task);
+        }
+        _ => {}
+    }
+}
+
+fn print_status() {
+    eprintln!("Working on {}", "nothing");
 }
