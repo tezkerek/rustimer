@@ -1,19 +1,22 @@
+use std::{error::Error, path::Path};
+
 use chrono::Duration;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 mod task;
+use task::{Task, TaskStore};
 
-use task::Task;
-
-fn fmt_duration(duration: Duration) -> String {
-    let hours = duration.num_hours() % 24;
-    let minutes = duration.num_minutes() % 60;
-    let seconds = duration.num_seconds() % 60;
-    return format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
+trait PrettyTime {
+    fn pretty(&self) -> String;
 }
 
-fn prompt(duration: Duration) -> String {
-    return format!("[{}]", fmt_duration(duration));
+impl PrettyTime for Duration {
+    fn pretty(&self) -> String {
+        let hours = self.num_hours() % 24;
+        let minutes = self.num_minutes() % 60;
+        let seconds = self.num_seconds() % 60;
+        return format!("{:02}:{:02}:{:02}", hours, minutes, seconds);
+    }
 }
 
 fn get_arg_matches() -> ArgMatches<'static> {
@@ -29,23 +32,38 @@ fn get_arg_matches() -> ArgMatches<'static> {
         .get_matches();
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let arg_matches = get_arg_matches();
+
+    let mut store = TaskStore::from_file(Path::new("store.json"))?;
 
     // Default action is to show status
     if arg_matches.subcommand_name() == None {
-        print_status();
+        print_status(&store);
     }
 
     match arg_matches.subcommand() {
         ("start", Some(subargs)) => {
             let task = Task::create_now(subargs.value_of("name").unwrap());
-            println!("{:?}", task);
+            let new_task = store.add(task);
+            eprintln!("New task: {}", new_task.name);
         }
         _ => {}
     }
+    store.save()?;
+
+    Ok(())
 }
 
-fn print_status() {
-    eprintln!("Working on {}", "nothing");
+fn print_status(store: &TaskStore) {
+    let active_tasks = store.active_tasks();
+
+    if active_tasks.is_empty() {
+        eprintln!("No active tasks");
+    } else {
+        eprintln!("Working on:");
+        for task in active_tasks {
+            eprintln!("{} | Elapsed: {}", task.name, task.elapsed().pretty());
+        }
+    }
 }
