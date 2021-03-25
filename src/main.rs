@@ -4,6 +4,8 @@ mod task;
 use anyhow::{anyhow, Error};
 use chrono::Duration;
 use clap::ArgMatches;
+use prettytable::{cell, Row, Table};
+use std::borrow::Borrow;
 use std::path::Path;
 use task::{Task, TaskStore};
 
@@ -42,6 +44,15 @@ fn handle_cmds(arg_matches: ArgMatches) -> Result<(), Error> {
     }
 
     match arg_matches.subcommand() {
+        (args::LIST, Some(subargs)) => {
+            match subargs.value_of(args::list::KIND).unwrap() {
+                args::list::KIND_ALL => print_tasks(&store.all()),
+                args::list::KIND_COMPLETED => {
+                    print_tasks(&store.completed_tasks())
+                }
+                _ => {}
+            }
+        }
         (args::START, Some(subargs)) => {
             let task =
                 Task::create_now(subargs.value_of(args::start::NAME).unwrap());
@@ -76,13 +87,54 @@ fn print_status(store: &TaskStore) {
         eprintln!("No active tasks");
     } else {
         eprintln!("Working on:");
-        for (id, task) in active_tasks {
-            eprintln!(
-                "{} | {} | Elapsed: {}",
-                id,
-                task.name,
-                task.elapsed().pretty()
-            );
-        }
+        print_tasks(active_tasks.as_slice());
     }
 }
+
+fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
+    let mut table = Table::new();
+    table.add_row(Row::new(vec![
+        cell!("ID"),
+        cell!("Name"),
+        cell!("Interval"),
+        cell!("Elapsed"),
+    ]));
+
+    for (id, btask) in tasks {
+        let task: &Task = btask.borrow();
+        let interval_str = format!(
+            "{} - {}",
+            task.start_time.format("%F %T"),
+            task.end_time
+                .map(|d| d.format("%F %T").to_string())
+                .unwrap_or(String::new())
+        );
+
+        let row = Row::new(vec![
+            cell!(r->id.to_string().as_str()),
+            cell!(task.name.as_str()),
+            cell!(&interval_str),
+            cell!(r->task.elapsed().pretty().as_str()),
+        ]);
+        table.add_row(row);
+    }
+    table.printstd();
+}
+
+// #[derive(Debug)]
+// enum Entity {
+//     Task,
+//     Project,
+// }
+
+// #[derive(Debug)]
+// enum Error {
+//     Store(task::Error),
+//     NotFound(Entity),
+// }
+
+// impl From<task::Error> for Error {
+//     fn from(err: task::Error) -> Self {
+//         Self::Store(err)
+//     }
+// }

@@ -109,20 +109,44 @@ impl TaskStore {
         self.tasks.get(&id)
     }
 
-    pub fn active_tasks(&self) -> Vec<(u32, &Task)> {
+    pub fn filter<F: Fn(u32, &Task) -> bool>(&self, f: F) -> Vec<(u32, &Task)> {
         self.tasks
             .iter()
-            .filter_map(|(&id, t)| {
-                if t.end_time == None {
-                    Some((id, t))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(&id, t)| if f(id, t) { Some((id, t)) } else { None })
             .collect()
+    }
+
+    pub fn all(&self) -> Vec<(u32, &Task)> {
+        self.tasks.iter().map(|(&id, t)| (id, t)).collect()
+    }
+
+    pub fn active_tasks(&self) -> Vec<(u32, &Task)> {
+        self.filter(|_, t| !t.is_completed())
+    }
+
+    pub fn completed_tasks(&self) -> Vec<(u32, &Task)> {
+        self.filter(|_, t| t.is_completed())
     }
 }
 
 fn default_path() -> PathBuf {
     Path::new("").to_path_buf()
 }
+
+// #[derive(Debug)]
+// pub enum Error {
+//     Io(io::Error),
+//     Parse(serde_json::Error),
+// }
+
+// impl From<serde_json::Error> for Error {
+//     fn from(err: serde_json::Error) -> Self {
+//         Error::Parse(err)
+//     }
+// }
+
+// impl From<io::Error> for Error {
+//     fn from(err: io::Error) -> Self {
+//         Error::Io(err)
+//     }
+// }

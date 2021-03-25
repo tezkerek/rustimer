@@ -1,6 +1,13 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 
-pub const ALL: &str = "all";
+pub const LIST: &str = "list";
+pub mod list {
+    pub const KIND: &str = "kind";
+    pub const KIND_ALL: &str = "all";
+    pub const KIND_COMPLETED: &str = "completed";
+    pub const KIND_VALUES: [&str; 2] = [KIND_ALL, KIND_COMPLETED];
+    pub const KIND_DEFAULT: &str = "all";
+}
 
 pub const START: &str = "start";
 pub mod start {
@@ -17,6 +24,15 @@ pub mod complete {
 pub fn get_arg_matches() -> ArgMatches<'static> {
     App::new("Rustimer")
         .version("0.1")
+        .subcommand(
+            SubCommand::with_name(LIST).arg(
+                Arg::with_name(list::KIND)
+                    .help("What kind of tasks to list (default: all)")
+                    .possible_values(&list::KIND_VALUES)
+                    .default_value(list::KIND_DEFAULT)
+                    .required(false),
+            ),
+        )
         .subcommand(
             SubCommand::with_name(START)
                 .arg(
