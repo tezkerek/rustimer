@@ -2,18 +2,18 @@ mod args;
 mod task;
 
 use anyhow::{anyhow, Error};
-use chrono::Duration;
+use chrono::{DateTime, Duration, TimeZone};
 use clap::ArgMatches;
 use prettytable::{cell, Row, Table};
-use std::borrow::Borrow;
 use std::path::Path;
+use std::{borrow::Borrow, fmt::Display};
 use task::{Task, TaskStore};
 
-trait PrettyTime {
+trait Pretty {
     fn pretty(&self) -> String;
 }
 
-impl PrettyTime for Duration {
+impl Pretty for Duration {
     fn pretty(&self) -> String {
         let days = self.num_days();
         let hours = self.num_hours() % 24;
@@ -27,6 +27,15 @@ impl PrettyTime for Duration {
                 days, hours, minutes, seconds
             ),
         }
+    }
+}
+
+impl<T: TimeZone> Pretty for DateTime<T>
+where
+    T::Offset: Display,
+{
+    fn pretty(&self) -> String {
+        self.format("%F %T").to_string()
     }
 }
 
@@ -104,10 +113,8 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
         let task: &Task = btask.borrow();
         let interval_str = format!(
             "{} - {}",
-            task.start_time.format("%F %T"),
-            task.end_time
-                .map(|d| d.format("%F %T").to_string())
-                .unwrap_or(String::new())
+            task.start_time.pretty(),
+            task.end_time.map(|d| d.pretty()).unwrap_or(String::new())
         );
 
         let row = Row::new(vec![
