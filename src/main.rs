@@ -1,92 +1,41 @@
 mod args;
+mod pretty;
 mod task;
 
-use anyhow::{anyhow, Error};
-use chrono::{DateTime, Duration, TimeZone};
+use anyhow::{anyhow, Result};
 use clap::ArgMatches;
 use prettytable::{cell, Row, Table};
-use std::path::Path;
-use std::{borrow::Borrow, fmt::Display};
+use std::{borrow::Borrow, path::Path};
+
+use pretty::Pretty;
 use task::{Task, TaskStore};
 
-trait Pretty {
-    fn pretty(&self) -> String;
-}
-
-impl Pretty for Duration {
-    fn pretty(&self) -> String {
-        let days = self.num_days();
-        let hours = self.num_hours() % 24;
-        let minutes = self.num_minutes() % 60;
-        let seconds = self.num_seconds() % 60;
-        match days {
-            0 => format!("{:02}:{:02}:{:02}", hours, minutes, seconds),
-            1 => format!("1 day, {:02}:{:02}:{:02}", hours, minutes, seconds),
-            _ => format!(
-                "{} days, {:02}:{:02}:{:02}",
-                days, hours, minutes, seconds
-            ),
-        }
-    }
-}
-
-impl<T: TimeZone> Pretty for DateTime<T>
-where
-    T::Offset: Display,
-{
-    fn pretty(&self) -> String {
-        self.format("%F %T").to_string()
-    }
-}
-
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
     let arg_matches = args::get_arg_matches();
-    handle_cmds(arg_matches)
-}
-
-fn handle_cmds(arg_matches: ArgMatches) -> Result<(), Error> {
-    let mut store = TaskStore::from_file(Path::new("store.json"))?;
 
     // Default action is to show status
     if arg_matches.subcommand_name() == None {
-        print_status(&store);
+        print_status(&get_store()?);
     }
 
     match arg_matches.subcommand() {
         (args::LIST, Some(subargs)) => {
-            match subargs.value_of(args::list::KIND).unwrap() {
-                args::list::KIND_ALL => print_tasks(&store.all()),
-                args::list::KIND_COMPLETED => {
-                    print_tasks(&store.completed_tasks())
-                }
-                _ => {}
-            }
+            handle_list(subargs)?;
         }
         (args::START, Some(subargs)) => {
-            let task =
-                Task::create_now(subargs.value_of(args::start::NAME).unwrap());
-            let new_task = store.add(task);
-            eprintln!("New task: {}", new_task.name);
+            handle_start(subargs)?;
         }
         (args::COMPLETE, Some(subargs)) => {
-            let id: u32 = subargs
-                .value_of(args::complete::NAME)
-                .unwrap()
-                .parse()
-                .unwrap();
-            let mut task = store
-                .get_by_id(id)
-                .ok_or(anyhow!(format!("Task {} does not exist", id)))?
-                .clone();
-            task.complete_now();
-            let new_task = store.update(id, task);
-            eprintln!("Completed task {}", new_task.name);
+            handle_complete(subargs)?;
         }
         _ => {}
     }
-    store.save()?;
 
     Ok(())
+}
+
+fn get_store() -> Result<TaskStore> {
+    TaskStore::from_file(Path::new("store.json"))
 }
 
 fn print_status(store: &TaskStore) {
@@ -126,6 +75,43 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
         table.add_row(row);
     }
     table.printstd();
+}
+
+fn handle_list(args: &ArgMatches) -> Result<()> {
+    let store = get_store()?;
+
+    match args.value_of(args::list::KIND).unwrap() {
+        args::list::KIND_ALL => print_tasks(&store.all()),
+        args::list::KIND_COMPLETED => print_tasks(&store.completed_tasks()),
+        _ => {}
+    }
+
+    Ok(())
+}
+
+fn handle_start(args: &ArgMatches) -> Result<()> {
+    let mut store = get_store()?;
+    let new_task =
+        store.add(Task::create_now(args.value_of(args::start::NAME).unwrap()));
+    eprintln!("New task: {}", new_task.name);
+    store.save()?;
+    Ok(())
+}
+
+fn handle_complete(args: &ArgMatches) -> Result<()> {
+    let mut store = get_store()?;
+    let id: u32 = args
+        .value_of(args::complete::NAME)
+        .unwrap()
+        .parse()
+        .unwrap();
+    let task: &mut Task = store
+        .get_mut(id)
+        .ok_or(anyhow!(format!("Task {} does not exist", id)))?;
+    task.complete_now();
+    eprintln!("Completed task {}", task.name);
+    store.save()?;
+    Ok(())
 }
 
 // #[derive(Debug)]

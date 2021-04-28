@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Error, Result};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -56,7 +56,7 @@ pub struct TaskStore {
 }
 
 impl TaskStore {
-    pub fn from_file(path: &Path) -> Result<Self, Error> {
+    pub fn from_file(path: &Path) -> Result<Self> {
         let file_result = OpenOptions::new().read(true).open(path);
 
         let store = match file_result {
@@ -105,8 +105,8 @@ impl TaskStore {
         return self.tasks.get(&id).unwrap();
     }
 
-    pub fn get_by_id(&self, id: u32) -> Option<&Task> {
-        self.tasks.get(&id)
+    pub fn get_mut(&mut self, id: u32) -> Option<&mut Task> {
+        self.tasks.get_mut(&id)
     }
 
     pub fn filter<F: Fn(u32, &Task) -> bool>(&self, f: F) -> Vec<(u32, &Task)> {
