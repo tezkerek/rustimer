@@ -12,12 +12,8 @@ impl Pretty for Duration {
         let minutes = self.num_minutes() % 60;
         let seconds = self.num_seconds() % 60;
         match days {
-            0 => format!("{:02}:{:02}:{:02}", hours, minutes, seconds),
-            1 => format!("1 day, {:02}:{:02}:{:02}", hours, minutes, seconds),
-            _ => format!(
-                "{} days, {:02}:{:02}:{:02}",
-                days, hours, minutes, seconds
-            ),
+            0 => format!("{:02}h {:02}min {:02}s", hours, minutes, seconds),
+            _ => format!("{}d {:02}h {:02}min {:02}s", days, hours, minutes, seconds),
         }
     }
 }
