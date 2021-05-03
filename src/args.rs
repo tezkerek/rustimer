@@ -4,8 +4,9 @@ pub const LIST: &str = "list";
 pub mod list {
     pub const KIND: &str = "kind";
     pub const KIND_ALL: &str = "all";
+    pub const KIND_RUNNING: &str = "running";
     pub const KIND_COMPLETED: &str = "completed";
-    pub const KIND_VALUES: [&str; 2] = [KIND_ALL, KIND_COMPLETED];
+    pub const KIND_VALUES: [&str; 3] = [KIND_ALL,  KIND_RUNNING, KIND_COMPLETED];
     pub const KIND_DEFAULT: &str = "all";
 }
 

@@ -39,13 +39,13 @@ fn get_store() -> Result<TaskStore> {
 }
 
 fn print_status(store: &TaskStore) {
-    let active_tasks = store.active_tasks();
+    let running_tasks = store.running_tasks();
 
-    if active_tasks.is_empty() {
-        eprintln!("No active tasks");
+    if running_tasks.is_empty() {
+        eprintln!("No running tasks");
     } else {
         eprintln!("Working on:");
-        print_tasks(active_tasks.as_slice());
+        print_tasks(running_tasks.as_slice());
     }
 }
 
@@ -82,6 +82,7 @@ fn handle_list(args: &ArgMatches) -> Result<()> {
 
     match args.value_of(args::list::KIND).unwrap() {
         args::list::KIND_ALL => print_tasks(&store.all()),
+        args::list::KIND_RUNNING => print_tasks(&store.running_tasks()),
         args::list::KIND_COMPLETED => print_tasks(&store.completed_tasks()),
         _ => {}
     }

@@ -120,7 +120,7 @@ impl TaskStore {
         self.tasks.iter().map(|(&id, t)| (id, t)).collect()
     }
 
-    pub fn active_tasks(&self) -> Vec<(u32, &Task)> {
+    pub fn running_tasks(&self) -> Vec<(u32, &Task)> {
         self.filter(|_, t| !t.is_completed())
     }
 
