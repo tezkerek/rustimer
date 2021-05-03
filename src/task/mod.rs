@@ -1,5 +1,5 @@
 use anyhow::{Error, Result};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap, fmt::Debug, fs::OpenOptions, io, io::BufReader,
@@ -9,19 +9,19 @@ use std::{
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
     pub name: String,
-    pub start_time: DateTime<Utc>,
-    pub end_time: Option<DateTime<Utc>>,
+    pub start_time: DateTime<Local>,
+    pub end_time: Option<DateTime<Local>>,
 }
 
 impl Task {
     pub fn create_now(name: &str) -> Self {
-        Self::new(name, Utc::now(), None)
+        Self::new(name, Local::now(), None)
     }
 
     pub fn new(
         name: &str,
-        start_time: DateTime<Utc>,
-        end_time: Option<DateTime<Utc>>,
+        start_time: DateTime<Local>,
+        end_time: Option<DateTime<Local>>,
     ) -> Self {
         Task {
             name: String::from(name),
@@ -38,12 +38,12 @@ impl Task {
     pub fn elapsed(&self) -> Duration {
         match self.end_time {
             Some(end) => end - self.start_time,
-            None => Utc::now() - self.start_time,
+            None => Local::now() - self.start_time,
         }
     }
 
     pub fn complete_now(&mut self) {
-        self.end_time = Some(Utc::now())
+        self.end_time = Some(Local::now())
     }
 }
 
