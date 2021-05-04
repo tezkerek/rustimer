@@ -6,7 +6,7 @@ pub mod list {
     pub const KIND_ALL: &str = "all";
     pub const KIND_RUNNING: &str = "running";
     pub const KIND_COMPLETED: &str = "completed";
-    pub const KIND_VALUES: [&str; 3] = [KIND_ALL,  KIND_RUNNING, KIND_COMPLETED];
+    pub const KIND_VALUES: [&str; 3] = [KIND_ALL, KIND_RUNNING, KIND_COMPLETED];
     pub const KIND_DEFAULT: &str = "all";
 }
 
@@ -22,7 +22,7 @@ pub mod complete {
     pub const END_TIME: &str = "end_time";
 }
 
-pub fn get_arg_matches() -> ArgMatches<'static> {
+pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
     App::new("Rustimer")
         .version("0.1")
         .subcommand(

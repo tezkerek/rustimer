@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use chrono::{DateTime, Duration, TimeZone};
+use std::fmt::Display;
 
 pub trait Pretty {
     fn pretty(&self) -> String;
@@ -13,7 +13,10 @@ impl Pretty for Duration {
         let seconds = self.num_seconds() % 60;
         match days {
             0 => format!("{:02}h {:02}min {:02}s", hours, minutes, seconds),
-            _ => format!("{}d {:02}h {:02}min {:02}s", days, hours, minutes, seconds),
+            _ => format!(
+                "{}d {:02}h {:02}min {:02}s",
+                days, hours, minutes, seconds
+            ),
         }
     }
 }
@@ -26,5 +29,3 @@ where
         self.format("%F %T").to_string()
     }
 }
-
-

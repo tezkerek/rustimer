@@ -114,21 +114,3 @@ fn handle_complete(args: &ArgMatches) -> Result<()> {
     store.save()?;
     Ok(())
 }
-
-// #[derive(Debug)]
-// enum Entity {
-//     Task,
-//     Project,
-// }
-
-// #[derive(Debug)]
-// enum Error {
-//     Store(task::Error),
-//     NotFound(Entity),
-// }
-
-// impl From<task::Error> for Error {
-//     fn from(err: task::Error) -> Self {
-//         Self::Store(err)
-//     }
-// }
