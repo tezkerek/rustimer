@@ -42,8 +42,12 @@ impl Task {
         }
     }
 
+    pub fn complete_at(&mut self, date: DateTime<Local>) {
+        self.end_time = Some(date);
+    }
+
     pub fn complete_now(&mut self) {
-        self.end_time = Some(Local::now())
+        self.complete_at(Local::now())
     }
 }
 

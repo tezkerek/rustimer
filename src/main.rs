@@ -92,8 +92,18 @@ fn handle_list(args: &ArgMatches) -> Result<()> {
 
 fn handle_start(args: &ArgMatches) -> Result<()> {
     let mut store = get_store()?;
-    let new_task =
-        store.add(Task::create_now(args.value_of(args::start::NAME).unwrap()));
+    let name = args.value_of(args::start::NAME).unwrap();
+
+    let new_task = store.add(
+        if let Some(start_time_res) = args
+            .value_of(args::start::START_TIME)
+            .map(|str| args::parse_local_datetime(str))
+        {
+            Task::new(name, start_time_res?, None)
+        } else {
+            Task::create_now(name)
+        },
+    );
     eprintln!("New task: {}", new_task.name);
     store.save()?;
     Ok(())
@@ -101,15 +111,19 @@ fn handle_start(args: &ArgMatches) -> Result<()> {
 
 fn handle_complete(args: &ArgMatches) -> Result<()> {
     let mut store = get_store()?;
-    let id: u32 = args
-        .value_of(args::complete::NAME)
-        .unwrap()
-        .parse()
-        .unwrap();
+    let id: u32 = args.value_of(args::complete::NAME).unwrap().parse()?;
     let task: &mut Task = store
         .get_mut(id)
         .ok_or(anyhow!(format!("Task {} does not exist", id)))?;
-    task.complete_now();
+
+    if let Some(end_time_res) = args
+        .value_of(args::complete::END_TIME)
+        .map(|str| args::parse_local_datetime(str))
+    {
+        task.complete_at(end_time_res?);
+    } else {
+        task.complete_now();
+    }
     eprintln!("Completed task {}", task.name);
     store.save()?;
     Ok(())

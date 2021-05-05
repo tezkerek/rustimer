@@ -1,3 +1,5 @@
+use anyhow::{anyhow, Context, Result};
+use chrono::{DateTime, NaiveDateTime, NaiveTime, TimeZone};
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 pub const LIST: &str = "list";
@@ -45,6 +47,7 @@ pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
                     Arg::with_name(start::START_TIME)
                         .help("When to start the task")
                         .long("at")
+                        .takes_value(true)
                         .required(false),
                 ),
         )
@@ -59,8 +62,53 @@ pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
                     Arg::with_name(complete::END_TIME)
                         .help("When to complete the task")
                         .long("at")
+                        .takes_value(true)
                         .required(false),
                 ),
         )
         .get_matches()
+}
+
+pub fn parse_local_datetime(s: &str) -> Result<DateTime<chrono::Local>> {
+    let parsed: NaiveDateTime = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
+        .or_else(|_| {
+            // Today + hours, minutes, seconds
+            NaiveTime::parse_from_str(s, "%H:%M:%S")
+                .or_else(|_| {
+                    // Today + hours and minutes only
+                    NaiveTime::parse_from_str(s, "%H:%M")
+                })
+                .map(|time| {
+                    NaiveDateTime::new(
+                        chrono::Local::today().naive_local(),
+                        time,
+                    )
+                })
+        })
+        .context("Failed to parse date")?;
+
+    chrono::Local
+        .from_local_datetime(&parsed)
+        .earliest()
+        .ok_or(anyhow!("Failed to parse date"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Local;
+
+    #[test]
+    fn test_parse_local_datetime() {
+        let full = parse_local_datetime("2021-05-04 08:32:15").unwrap();
+        assert_eq!(full, Local.ymd(2021, 5, 4).and_hms(8, 32, 15));
+
+        let time = parse_local_datetime("08:32:15").unwrap();
+        assert_eq!(time, Local::today().and_hms(8, 32, 15));
+
+        assert_eq!(
+            parse_local_datetime("8:03").unwrap(),
+            Local::today().and_hms(8, 3, 0)
+        );
+    }
 }
