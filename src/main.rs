@@ -28,6 +28,9 @@ fn main() -> Result<()> {
         (args::COMPLETE, Some(subargs)) => {
             handle_complete(subargs)?;
         }
+        (args::DELETE, Some(subargs)) => {
+            handle_delete(subargs)?;
+        }
         _ => {}
     }
 
@@ -124,5 +127,17 @@ fn handle_complete(args: &ArgMatches) -> Result<()> {
         task.complete_now();
     }
     eprintln!("Completed task \"{}\"", task.name);
+    store.save()
+}
+
+fn handle_delete(args: &ArgMatches) -> Result<()> {
+    let mut store = get_store()?;
+    let id: u32 = args.value_of(args::complete::ID).unwrap().parse()?;
+
+    let removed_task = store
+        .remove(&id)
+        .with_context(|| format!("Task with ID {} does not exist", id))?;
+    eprintln!("Removed task \"{}\"", removed_task.name);
+
     store.save()
 }

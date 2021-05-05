@@ -24,6 +24,11 @@ pub mod complete {
     pub const END_TIME: &str = "end_time";
 }
 
+pub const DELETE: &str = "delete";
+pub mod delete {
+    pub const ID: &str = "id";
+}
+
 pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
     App::new("Rustimer")
         .version("0.1")
@@ -65,6 +70,13 @@ pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
                         .takes_value(true)
                         .required(false),
                 ),
+        )
+        .subcommand(
+            SubCommand::with_name(DELETE).arg(
+                Arg::with_name(delete::ID)
+                    .help("ID of the task")
+                    .required(true),
+            ),
         )
         .get_matches()
 }
