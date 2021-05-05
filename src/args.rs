@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use chrono::{DateTime, NaiveDateTime, NaiveTime, TimeZone};
 use clap::{App, Arg, ArgMatches, SubCommand};
 
@@ -20,7 +20,7 @@ pub mod start {
 
 pub const COMPLETE: &str = "complete";
 pub mod complete {
-    pub const NAME: &str = "name";
+    pub const ID: &str = "id";
     pub const END_TIME: &str = "end_time";
 }
 
@@ -54,8 +54,8 @@ pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
         .subcommand(
             SubCommand::with_name(COMPLETE)
                 .arg(
-                    Arg::with_name(complete::NAME)
-                        .help("Name of the task")
+                    Arg::with_name(complete::ID)
+                        .help("ID of the task")
                         .required(true),
                 )
                 .arg(
@@ -70,27 +70,28 @@ pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
 }
 
 pub fn parse_local_datetime(s: &str) -> Result<DateTime<chrono::Local>> {
-    let parsed: NaiveDateTime = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
-        .or_else(|_| {
-            // Today + hours, minutes, seconds
-            NaiveTime::parse_from_str(s, "%H:%M:%S")
-                .or_else(|_| {
-                    // Today + hours and minutes only
-                    NaiveTime::parse_from_str(s, "%H:%M")
-                })
-                .map(|time| {
-                    NaiveDateTime::new(
-                        chrono::Local::today().naive_local(),
-                        time,
-                    )
-                })
-        })
-        .context("Failed to parse date")?;
+    let parsed: NaiveDateTime =
+        NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
+            .or_else(|_| {
+                // Today + hours, minutes, seconds
+                NaiveTime::parse_from_str(s, "%H:%M:%S")
+                    .or_else(|_| {
+                        // Today + hours and minutes only
+                        NaiveTime::parse_from_str(s, "%H:%M")
+                    })
+                    .map(|time| {
+                        NaiveDateTime::new(
+                            chrono::Local::today().naive_local(),
+                            time,
+                        )
+                    })
+            })
+            .context("Failed to parse date")?;
 
     chrono::Local
         .from_local_datetime(&parsed)
         .earliest()
-        .ok_or(anyhow!("Failed to parse date"))
+        .with_context(|| format!("Failed to parse date"))
 }
 
 #[cfg(test)]

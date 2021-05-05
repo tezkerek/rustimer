@@ -1,4 +1,4 @@
-use anyhow::{Error, Result};
+use anyhow::{Context, Error, Result};
 use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -83,15 +83,14 @@ impl TaskStore {
         Ok(store)
     }
 
-    pub fn save(&self) -> Result<(), Error> {
+    pub fn save(&self) -> Result<()> {
         let file = OpenOptions::new()
             .write(true)
             .create(true)
             .open(&self.save_path)?;
 
-        serde_json::to_writer(file, self)?;
-
-        Ok(())
+        serde_json::to_writer(file, self)
+            .context("Failed to write changes to file")
     }
 
     pub fn add(&mut self, task: Task) -> &Task {
@@ -136,21 +135,3 @@ impl TaskStore {
 fn default_path() -> PathBuf {
     Path::new("").to_path_buf()
 }
-
-// #[derive(Debug)]
-// pub enum Error {
-//     Io(io::Error),
-//     Parse(serde_json::Error),
-// }
-
-// impl From<serde_json::Error> for Error {
-//     fn from(err: serde_json::Error) -> Self {
-//         Error::Parse(err)
-//     }
-// }
-
-// impl From<io::Error> for Error {
-//     fn from(err: io::Error) -> Self {
-//         Error::Io(err)
-//     }
-// }

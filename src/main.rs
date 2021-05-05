@@ -2,7 +2,7 @@ mod args;
 mod pretty;
 mod task;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use clap::ArgMatches;
 use prettytable::{cell, Row, Table};
 use std::{borrow::Borrow, path::Path};
@@ -105,16 +105,15 @@ fn handle_start(args: &ArgMatches) -> Result<()> {
         },
     );
     eprintln!("New task: {}", new_task.name);
-    store.save()?;
-    Ok(())
+    store.save()
 }
 
 fn handle_complete(args: &ArgMatches) -> Result<()> {
     let mut store = get_store()?;
-    let id: u32 = args.value_of(args::complete::NAME).unwrap().parse()?;
+    let id: u32 = args.value_of(args::complete::ID).unwrap().parse()?;
     let task: &mut Task = store
         .get_mut(id)
-        .ok_or(anyhow!(format!("Task {} does not exist", id)))?;
+        .with_context(|| format!("Task {} does not exist", id))?;
 
     if let Some(end_time_res) = args
         .value_of(args::complete::END_TIME)
@@ -124,7 +123,6 @@ fn handle_complete(args: &ArgMatches) -> Result<()> {
     } else {
         task.complete_now();
     }
-    eprintln!("Completed task {}", task.name);
-    store.save()?;
-    Ok(())
+    eprintln!("Completed task \"{}\"", task.name);
+    store.save()
 }
