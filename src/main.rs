@@ -66,7 +66,7 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
         let interval_str = format!(
             "{} - {}",
             task.start_time.pretty(),
-            task.end_time.map(|d| d.pretty()).unwrap_or(String::new())
+            task.end_time.map(|d| d.pretty()).unwrap_or("...".to_owned())
         );
 
         let row = Row::new(vec![
@@ -116,7 +116,7 @@ fn handle_complete(args: &ArgMatches) -> Result<()> {
     let id: u32 = args.value_of(args::complete::ID).unwrap().parse()?;
     let task: &mut Task = store
         .get_mut(id)
-        .with_context(|| format!("Task {} does not exist", id))?;
+        .with_context(|| format!("Task with ID {} does not exist", id))?;
 
     if let Some(end_time_res) = args
         .value_of(args::complete::END_TIME)
@@ -137,7 +137,7 @@ fn handle_delete(args: &ArgMatches) -> Result<()> {
     let removed_task = store
         .remove(&id)
         .with_context(|| format!("Task with ID {} does not exist", id))?;
-    eprintln!("Removed task \"{}\"", removed_task.name);
+    eprintln!("Task \"{}\" has been deleted", removed_task.name);
 
     store.save()
 }

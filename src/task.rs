@@ -24,7 +24,7 @@ impl Task {
         end_time: Option<DateTime<Local>>,
     ) -> Self {
         Task {
-            name: String::from(name),
+            name: name.to_owned(),
             start_time,
             end_time,
         }
