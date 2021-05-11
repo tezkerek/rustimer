@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Local};
 use serde::{Deserialize, Serialize};
 use std::{

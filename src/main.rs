@@ -66,7 +66,9 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
         let interval_str = format!(
             "{} - {}",
             task.start_time.pretty(),
-            task.end_time.map(|d| d.pretty()).unwrap_or("...".to_owned())
+            task.end_time
+                .map(|d| d.pretty())
+                .unwrap_or("...".to_owned())
         );
 
         let row = Row::new(vec![
