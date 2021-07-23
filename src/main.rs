@@ -99,12 +99,16 @@ fn handle_start(args: &ArgMatches) -> Result<()> {
     let mut store = get_store()?;
     let name = args.value_of(args::start::NAME).unwrap();
 
+    let tags: Option<Vec<&str>> = args
+        .values_of(args::start::TAGS)
+        .map(|vals| vals.collect());
+
     let new_task = store.add(
         if let Some(start_time_res) = args
             .value_of(args::start::START_TIME)
             .map(|str| args::parse_local_datetime(str))
         {
-            Task::new(name, start_time_res?, None)
+            Task::new(name, tags.as_deref().unwrap_or(&[]), start_time_res?, None)
         } else {
             Task::create_now(name)
         },

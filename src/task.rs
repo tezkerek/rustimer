@@ -9,22 +9,25 @@ use std::{
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
     pub name: String,
+    pub tags: Vec<String>,
     pub start_time: DateTime<Local>,
     pub end_time: Option<DateTime<Local>>,
 }
 
 impl Task {
-    pub fn create_now(name: &str) -> Self {
-        Self::new(name, Local::now(), None)
+    pub fn create_now<T: Into<String>>(name: T) -> Self {
+        Self::new(name.into(), vec![], Local::now(), None)
     }
 
-    pub fn new(
-        name: &str,
+    pub fn new<T: Into<String>>(
+        name: T,
+        tags: &[T],
         start_time: DateTime<Local>,
         end_time: Option<DateTime<Local>>,
     ) -> Self {
         Task {
-            name: name.to_owned(),
+            name: name.into(),
+            tags: tags.iter().map(Into::into).collect(),
             start_time,
             end_time,
         }
