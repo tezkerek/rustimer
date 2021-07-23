@@ -15,6 +15,7 @@ pub mod list {
 pub const START: &str = "start";
 pub mod start {
     pub const NAME: &str = "name";
+    pub const TAGS: &str = "tags";
     pub const START_TIME: &str = "start_time";
 }
 
@@ -54,6 +55,13 @@ pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
                         .long("at")
                         .takes_value(true)
                         .required(false),
+                )
+                .arg(
+                    Arg::with_name(start::TAGS)
+                    .help("Space-separated tags for the task")
+                    .multiple(true)
+                    .takes_value(true)
+                    .required(false)
                 ),
         )
         .subcommand(

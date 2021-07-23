@@ -59,6 +59,7 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
         cell!("Name"),
         cell!("Interval"),
         cell!("Elapsed"),
+        cell!("Tags"),
     ]));
 
     for (id, btask) in tasks {
@@ -76,6 +77,7 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
             cell!(task.name.as_str()),
             cell!(&interval_str),
             cell!(r->task.elapsed().pretty().as_str()),
+            cell!(r->task.tags.join(" ")),
         ]);
         table.add_row(row);
     }
@@ -99,16 +101,20 @@ fn handle_start(args: &ArgMatches) -> Result<()> {
     let mut store = get_store()?;
     let name = args.value_of(args::start::NAME).unwrap();
 
-    let new_task = store.add(
-        if let Some(start_time_res) = args
-            .value_of(args::start::START_TIME)
-            .map(|str| args::parse_local_datetime(str))
-        {
-            Task::new(name, start_time_res?, None)
-        } else {
-            Task::create_now(name)
-        },
-    );
+    let tags: Vec<&str> = args
+        .values_of(args::start::TAGS)
+        .map(|vals| vals.collect())
+        .unwrap_or(vec![]);
+
+    let start_time = args
+        .value_of(args::start::START_TIME)
+        .map(|str| args::parse_local_datetime(str));
+
+    let new_task = store.add(if let Some(start_time) = start_time {
+        Task::new(name, &tags, start_time?, None)
+    } else {
+        Task::create_now(name, &tags)
+    });
     eprintln!("New task: {}", new_task.name);
     store.save()
 }
