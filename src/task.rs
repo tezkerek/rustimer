@@ -15,19 +15,20 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn create_now<T: Into<String>>(name: T) -> Self {
-        Self::new(name.into(), vec![], Local::now(), None)
+    pub fn create_now<S: Into<String>>(name: S, tags: &[&str]) -> Self {
+        Self::new(name.into(), tags, Local::now(), None)
     }
 
-    pub fn new<T: Into<String>>(
-        name: T,
-        tags: &[T],
+    pub fn new<S: Into<String>>(
+        name: S,
+        tags: &[&str],
         start_time: DateTime<Local>,
         end_time: Option<DateTime<Local>>,
     ) -> Self {
+        let owned_tags = tags.iter().map(|&s| s.into()).collect();
         Task {
             name: name.into(),
-            tags: tags.iter().map(Into::into).collect(),
+            tags: owned_tags,
             start_time,
             end_time,
         }
