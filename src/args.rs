@@ -1,92 +1,67 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, NaiveDateTime, NaiveTime, TimeZone};
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
-pub const LIST: &str = "list";
-pub mod list {
-    pub const KIND: &str = "kind";
-    pub const KIND_ALL: &str = "all";
-    pub const KIND_RUNNING: &str = "running";
-    pub const KIND_COMPLETED: &str = "completed";
-    pub const KIND_VALUES: [&str; 3] = [KIND_ALL, KIND_RUNNING, KIND_COMPLETED];
-    pub const KIND_DEFAULT: &str = "all";
+#[derive(Parser)]
+#[command(author, version, about)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Command>,
 }
 
-pub const START: &str = "start";
-pub mod start {
-    pub const NAME: &str = "name";
-    pub const TAGS: &str = "tags";
-    pub const START_TIME: &str = "start_time";
+#[derive(Subcommand)]
+pub enum Command {
+    /// List tasks
+    List(ListArgs),
+    /// Start a task
+    Start(StartArgs),
+    /// Complete a task
+    Complete(CompleteArgs),
+    /// Delete a task
+    Delete(DeleteArgs),
 }
 
-pub const COMPLETE: &str = "complete";
-pub mod complete {
-    pub const ID: &str = "id";
-    pub const END_TIME: &str = "end_time";
+#[derive(Clone, ValueEnum)]
+pub enum ListKind {
+    All,
+    Running,
+    Completed,
 }
 
-pub const DELETE: &str = "delete";
-pub mod delete {
-    pub const ID: &str = "id";
+#[derive(Args)]
+pub struct ListArgs {
+    /// The kind of tasks to list
+    #[arg(value_enum, default_value_t = ListKind::All)]
+    pub kind: ListKind,
 }
 
-pub fn get_arg_matches<'a>() -> ArgMatches<'a> {
-    App::new("Rustimer")
-        .version("0.1")
-        .subcommand(
-            SubCommand::with_name(LIST).arg(
-                Arg::with_name(list::KIND)
-                    .help("What kind of tasks to list (default: all)")
-                    .possible_values(&list::KIND_VALUES)
-                    .default_value(list::KIND_DEFAULT)
-                    .required(false),
-            ),
-        )
-        .subcommand(
-            SubCommand::with_name(START)
-                .arg(
-                    Arg::with_name(start::NAME)
-                        .help("Name of the task")
-                        .required(true),
-                )
-                .arg(
-                    Arg::with_name(start::START_TIME)
-                        .help("When to start the task")
-                        .long("at")
-                        .takes_value(true)
-                        .required(false),
-                )
-                .arg(
-                    Arg::with_name(start::TAGS)
-                    .help("Space-separated tags for the task")
-                    .multiple(true)
-                    .takes_value(true)
-                    .required(false)
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name(COMPLETE)
-                .arg(
-                    Arg::with_name(complete::ID)
-                        .help("ID of the task")
-                        .required(true),
-                )
-                .arg(
-                    Arg::with_name(complete::END_TIME)
-                        .help("When to complete the task")
-                        .long("at")
-                        .takes_value(true)
-                        .required(false),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name(DELETE).arg(
-                Arg::with_name(delete::ID)
-                    .help("ID of the task")
-                    .required(true),
-            ),
-        )
-        .get_matches()
+#[derive(Args)]
+pub struct StartArgs {
+    /// Name of the task
+    pub name: String,
+
+    /// Start time of the task
+    #[arg(long = "at", value_parser = parse_local_datetime)]
+    pub start_time: Option<DateTime<chrono::Local>>,
+
+    /// Tags for the task
+    pub tags: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct CompleteArgs {
+    /// Task ID
+    pub id: u32,
+
+    /// Completion time for the task
+    #[arg(value_parser = parse_local_datetime)]
+    pub end_time: Option<DateTime<chrono::Local>>,
+}
+
+#[derive(Args)]
+pub struct DeleteArgs {
+    /// Task ID
+    pub id: u32,
 }
 
 pub fn parse_local_datetime(s: &str) -> Result<DateTime<chrono::Local>> {

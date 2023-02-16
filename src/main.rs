@@ -3,35 +3,35 @@ mod pretty;
 mod task;
 
 use anyhow::{Context, Result};
-use clap::ArgMatches;
+use clap::Parser;
 use prettytable::{cell, Row, Table};
 use std::{borrow::Borrow, path::Path};
 
+use args::{Cli, CompleteArgs, DeleteArgs, ListArgs, StartArgs};
 use pretty::Pretty;
 use task::{Task, TaskStore};
 
 fn main() -> Result<()> {
-    let arg_matches = args::get_arg_matches();
+    let args = Cli::parse();
 
     // Default action is to show status
-    if arg_matches.subcommand_name() == None {
+    if let Some(command) = args.command {
+        match command {
+            args::Command::List(subargs) => {
+                handle_list(&subargs)?;
+            }
+            args::Command::Start(subargs) => {
+                handle_start(&subargs)?;
+            }
+            args::Command::Complete(subargs) => {
+                handle_complete(&subargs)?;
+            }
+            args::Command::Delete(subargs) => {
+                handle_delete(&subargs)?;
+            }
+        }
+    } else {
         print_status(&get_store()?);
-    }
-
-    match arg_matches.subcommand() {
-        (args::LIST, Some(subargs)) => {
-            handle_list(subargs)?;
-        }
-        (args::START, Some(subargs)) => {
-            handle_start(subargs)?;
-        }
-        (args::COMPLETE, Some(subargs)) => {
-            handle_complete(subargs)?;
-        }
-        (args::DELETE, Some(subargs)) => {
-            handle_delete(subargs)?;
-        }
-        _ => {}
     }
 
     Ok(())
@@ -84,53 +84,38 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
     table.printstd();
 }
 
-fn handle_list(args: &ArgMatches) -> Result<()> {
+fn handle_list(args: &ListArgs) -> Result<()> {
     let store = get_store()?;
 
-    match args.value_of(args::list::KIND).unwrap() {
-        args::list::KIND_ALL => print_tasks(&store.all()),
-        args::list::KIND_RUNNING => print_tasks(&store.running_tasks()),
-        args::list::KIND_COMPLETED => print_tasks(&store.completed_tasks()),
-        _ => {}
+    match &args.kind {
+        args::ListKind::All => print_tasks(&store.all()),
+        args::ListKind::Running => print_tasks(&store.running_tasks()),
+        args::ListKind::Completed => print_tasks(&store.completed_tasks()),
     }
 
     Ok(())
 }
 
-fn handle_start(args: &ArgMatches) -> Result<()> {
+fn handle_start(args: &StartArgs) -> Result<()> {
     let mut store = get_store()?;
-    let name = args.value_of(args::start::NAME).unwrap();
 
-    let tags: Vec<&str> = args
-        .values_of(args::start::TAGS)
-        .map(|vals| vals.collect())
-        .unwrap_or(vec![]);
-
-    let start_time = args
-        .value_of(args::start::START_TIME)
-        .map(|str| args::parse_local_datetime(str));
-
-    let new_task = store.add(if let Some(start_time) = start_time {
-        Task::new(name, &tags, start_time?, None)
+    let new_task = store.add(if let Some(start_time) = args.start_time {
+        Task::new(&args.name, &args.tags, start_time, None)
     } else {
-        Task::create_now(name, &tags)
+        Task::create_now(&args.name, &args.tags)
     });
     eprintln!("New task: {}", new_task.name);
     store.save()
 }
 
-fn handle_complete(args: &ArgMatches) -> Result<()> {
+fn handle_complete(args: &CompleteArgs) -> Result<()> {
     let mut store = get_store()?;
-    let id: u32 = args.value_of(args::complete::ID).unwrap().parse()?;
     let task: &mut Task = store
-        .get_mut(id)
-        .with_context(|| format!("Task with ID {} does not exist", id))?;
+        .get_mut(args.id)
+        .with_context(|| format!("Task with ID {} does not exist", args.id))?;
 
-    if let Some(end_time_res) = args
-        .value_of(args::complete::END_TIME)
-        .map(|str| args::parse_local_datetime(str))
-    {
-        task.complete_at(end_time_res?);
+    if let Some(end_time) = args.end_time {
+        task.complete_at(end_time);
     } else {
         task.complete_now();
     }
@@ -138,13 +123,12 @@ fn handle_complete(args: &ArgMatches) -> Result<()> {
     store.save()
 }
 
-fn handle_delete(args: &ArgMatches) -> Result<()> {
+fn handle_delete(args: &DeleteArgs) -> Result<()> {
     let mut store = get_store()?;
-    let id: u32 = args.value_of(args::complete::ID).unwrap().parse()?;
 
     let removed_task = store
-        .remove(&id)
-        .with_context(|| format!("Task with ID {} does not exist", id))?;
+        .remove(&args.id)
+        .with_context(|| format!("Task with ID {} does not exist", args.id))?;
     eprintln!("Task \"{}\" has been deleted", removed_task.name);
 
     store.save()
