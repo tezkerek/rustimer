@@ -77,7 +77,7 @@ fn print_tasks<T: Borrow<Task>>(tasks: &[(u32, T)]) {
             cell!(task.name.as_str()),
             cell!(&interval_str),
             cell!(r->task.elapsed().pretty().as_str()),
-            cell!(r->task.tags.join(" ")),
+            cell!(task.tags.join(",")),
         ]);
         table.add_row(row);
     }
@@ -99,10 +99,12 @@ fn handle_list(args: &ListArgs) -> Result<()> {
 fn handle_start(args: &StartArgs) -> Result<()> {
     let mut store = get_store()?;
 
+    let tags: Vec<String> = args.tags.split(',').map(String::from).collect();
+
     let new_task = store.add(if let Some(start_time) = args.start_time {
-        Task::new(&args.name, &args.tags, start_time, None)
+        Task::new(&args.name, &tags, start_time, None)
     } else {
-        Task::create_now(&args.name, &args.tags)
+        Task::create_now(&args.name, &tags)
     });
     eprintln!("New task: {}", new_task.name);
     store.save()

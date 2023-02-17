@@ -44,8 +44,8 @@ pub struct StartArgs {
     #[arg(long = "at", value_parser = parse_local_datetime)]
     pub start_time: Option<DateTime<chrono::Local>>,
 
-    /// Tags for the task
-    pub tags: Vec<String>,
+    /// Comma-separated tags for the task
+    pub tags: String,
 }
 
 #[derive(Args)]
