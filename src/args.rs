@@ -17,6 +17,8 @@ pub enum Command {
     Start(StartArgs),
     /// Complete a task
     Complete(CompleteArgs),
+    /// Modify a task
+    Edit(EditArgs),
     /// Delete a task
     Delete(DeleteArgs),
 }
@@ -56,6 +58,32 @@ pub struct CompleteArgs {
     /// Completion time for the task
     #[arg(value_parser = parse_local_datetime)]
     pub end_time: Option<DateTime<chrono::Local>>,
+}
+
+#[derive(Args)]
+pub struct EditArgs {
+    /// Task ID
+    pub id: u32,
+
+    /// Name of the task
+    #[arg(long = "name")]
+    pub name: Option<String>,
+
+    /// Start time of the task
+    #[arg(long = "start-at", value_parser = parse_local_datetime)]
+    pub start_time: Option<DateTime<chrono::Local>>,
+
+    /// Completion time of the task
+    #[arg(long = "end-at", value_parser = parse_local_datetime)]
+    pub end_time: Option<DateTime<chrono::Local>>,
+
+    /// Remove completion time from task. Has priority over --end-at.
+    #[arg(long = "no-end")]
+    pub no_end: bool,
+
+    /// Comma-separated tags for the task
+    #[arg(long = "tags")]
+    pub tags: Option<String>,
 }
 
 #[derive(Args)]

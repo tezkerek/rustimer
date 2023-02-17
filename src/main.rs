@@ -7,7 +7,7 @@ use clap::Parser;
 use prettytable::{cell, Row, Table};
 use std::{borrow::Borrow, path::Path};
 
-use args::{Cli, CompleteArgs, DeleteArgs, ListArgs, StartArgs};
+use args::{Cli, CompleteArgs, DeleteArgs, EditArgs, ListArgs, StartArgs};
 use pretty::Pretty;
 use task::{Task, TaskStore};
 
@@ -25,6 +25,9 @@ fn main() -> Result<()> {
             }
             args::Command::Complete(subargs) => {
                 handle_complete(&subargs)?;
+            }
+            args::Command::Edit(subargs) => {
+                handle_edit(&subargs)?;
             }
             args::Command::Delete(subargs) => {
                 handle_delete(&subargs)?;
@@ -122,6 +125,34 @@ fn handle_complete(args: &CompleteArgs) -> Result<()> {
         task.complete_now();
     }
     eprintln!("Completed task \"{}\"", task.name);
+    store.save()
+}
+
+fn handle_edit(args: &EditArgs) -> Result<()> {
+    let mut store = get_store()?;
+
+    let task: &mut Task = store
+        .get_mut(args.id)
+        .with_context(|| format!("Task with ID {} does not exist", args.id))?;
+
+    if let Some(name) = &args.name {
+        task.name = name.to_string();
+    }
+
+    if let Some(start_time) = args.start_time {
+        task.start_time = start_time;
+    }
+
+    if args.no_end {
+        task.end_time = None;
+    } else if let Some(end_time) = args.end_time {
+        task.end_time = Some(end_time);
+    }
+
+    if let Some(tags) = &args.tags {
+        task.tags = tags.split(',').map(String::from).collect();
+    }
+
     store.save()
 }
 

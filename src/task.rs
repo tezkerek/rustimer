@@ -107,11 +107,6 @@ impl TaskStore {
         return self.tasks.get(&new_id).unwrap();
     }
 
-    pub fn update(&mut self, id: u32, task: Task) -> &Task {
-        self.tasks.insert(id, task);
-        return self.tasks.get(&id).unwrap();
-    }
-
     pub fn remove(&mut self, id: &u32) -> Option<Task> {
         self.tasks.remove(id)
     }
